@@ -2,3 +2,63 @@
 .Rhistory
 .RData
 .Ruserdata
+
+
+# --- R session files ---
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+
+# --- RStudio project files ---
+*.Rproj.user
+.Rproj.user
+.Rproj.user/*
+.Rproj.user/shared/notebooks
+
+# --- R Notebook / knitr junk ---
+*.utf8.md
+*.knit.md
+*.nb.html
+*.html
+cache/
+*_cache/
+*.Rproj
+.Rhistory
+.RData
+.DS_Store
+
+# --- Python or virtual environment (if used) ---
+venv/
+__pycache__/
+
+# --- renv (package environment) ---
+renv/library/
+renv/staging/
+renv/python/
+# Keep these (important):
+# !renv.lock
+# !renv/activate.R
+
+# --- Output folders ---
+output/
+data/output/
+logs/
+tmp/
+temp/
+*.tmp
+
+# --- Office / document cruft ---
+~$*.doc*
+*.RDataTmp
+
+# --- OS / IDE files ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- Quarto / Bookdown types ---
+_book/
+_site/
+docs/
