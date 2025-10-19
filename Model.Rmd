@@ -1,0 +1,136 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+
+library(tidyverse)
+library(brms)
+library(tidybayes)
+library(bayesplot)
+library(broom.mixed)
+library(furrr)
+library(loo)
+
+```
+
+```{r}
+### Data & safe transforms
+
+df_all_species <- read.csv("~/Datascience/RProjekte/BokuFischdetektionen/MERI_Migration/modeldata_P1_allspecies.csv")
+
+df <- df_all_species %>%
+  mutate(
+    # safe logs
+    log_QTra   = scale(log1p(QTra))[,1],
+    log_TTra   = scale(log1p(TTra))[,1],
+    log_QTramax= scale(log1p(QTramax))[,1],
+    log_TDan   = scale(log1p(TDan))[,1],
+    log_QDan   = scale(log1p(QDan))[,1],
+    log_add_tag= scale(log1p(add_tag))[,1],
+    age_class  = factor(age_class),
+    species    = factor(species),
+    week       = factor(week)
+  )
+```
+
+
+```{r}
+### Priors (safer on shape)
+
+priors <- c(
+  set_prior("student_t(3, 0, 1)", class = "Intercept"),
+  set_prior("normal(0, 0.5)", class = "b"),
+  set_prior("exponential(1)", class = "sd"),
+  set_prior("exponential(1)", class = "shape")  # <- changed
+)
+```
+
+```{r}
+### Model formulas (use the scaled columns)
+
+models <- tibble::tibble(
+  model_name = c("model1", "model2"),
+  formula = list(
+    det_count ~ log_QTra + log_TTra + age_class + log_add_tag + (1|species) + (1|week),
+    det_count ~ log_QTramax + age_class + log_add_tag + (1|species) + (1|week) + log_TDan + log_QDan
+  )
+)
+```
+
+
+```{r}
+### Fit (avoid nested parallelism)
+
+plan(multisession)  # or multisession if you want parallel across models
+
+models <- models %>%
+  mutate(
+    fit = furrr::future_map(
+      formula,
+      ~ brm(
+          formula = .x,
+          data = df,
+          family = negbinomial(),
+          iter = 2000,
+          warmup = 1000,
+          chains = 2,
+          cores = 2,         # keep small if running models in parallel
+          prior = priors,
+          save_pars = save_pars(all = TRUE),
+          seed = 123
+        ),
+      .options = furrr_options(seed = TRUE)
+    )
+  )
+```
+
+```{r}
+### Metrics (LOO + R² with summaries)
+```r
+```{r}
+extract_metrics <- function(fit) {
+  loo_obj <- loo::loo(fit, moment_match = TRUE)
+  r2      <- as.numeric(bayes_R2(fit))
+  tibble::tibble(
+    elpd_loo = loo_obj$estimates["elpd_loo","Estimate"],
+    p_loo    = loo_obj$estimates["p_loo","Estimate"],
+    looic    = loo_obj$estimates["looic","Estimate"],
+    bayes_r2_mean = mean(r2),
+    bayes_r2_q05  = quantile(r2, 0.05),
+    bayes_r2_q95  = quantile(r2, 0.95)
+  )
+}
+
+results_df <- models %>%
+  mutate(metrics = purrr::map(fit, extract_metrics)) %>%
+  tidyr::unnest(metrics)
+
+print(results_df)
+```
+
+```{r}
+### Coefficients tidy + plot
+
+coef_table <- models %>%
+  mutate(coefs = purrr::map(fit, ~ broom.mixed::tidy(.x, effects = "fixed", conf.int = TRUE))) %>%
+  select(model_name, coefs) %>%
+  tidyr::unnest(coefs)
+
+coef_table %>%
+  select(model_name, term, estimate, conf.low, conf.high) %>%
+  arrange(term) %>%
+  print()
+
+ggplot(coef_table, aes(x = term, y = estimate, color = model_name)) +
+  geom_point(position = position_dodge(width = 0.3), size = 3) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
+                position = position_dodge(width = 0.3), width = 0.2) +
+  coord_flip() +  # flips for readability
+  labs(title = "Coefficient Comparison Across Models",
+       x = "Predictor", y = "Estimate", color = "Model") +
+  theme_minimal(base_size = 12)
+```
+
