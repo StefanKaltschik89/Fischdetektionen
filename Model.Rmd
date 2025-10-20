@@ -8,18 +8,18 @@ output: html_notebook
 
 library(tidyverse)
 library(brms)
-library(tidybayes)
-library(bayesplot)
-library(broom.mixed)
 library(furrr)
 library(loo)
+library(here)
 
 ```
 
 ```{r}
-### Data & safe transforms
+df_all_species <-read.csv(here("data", "modeldata_P1_allspecies.csv"))
+```
 
-df_all_species <- read.csv("~/Datascience/RProjekte/BokuFischdetektionen/MERI_Migration/modeldata_P1_allspecies.csv")
+```{r}
+### Data & safe transforms
 
 df <- df_all_species %>%
   mutate(
@@ -64,7 +64,7 @@ models <- tibble::tibble(
 ```{r}
 ### Fit (avoid nested parallelism)
 
-plan(multisession)  # or multisession if you want parallel across models
+#plan(multisession)  # or multisession if you want parallel across models
 
 models <- models %>%
   mutate(
@@ -89,8 +89,6 @@ models <- models %>%
 
 ```{r}
 ### Metrics (LOO + R² with summaries)
-```r
-```{r}
 extract_metrics <- function(fit) {
   loo_obj <- loo::loo(fit, moment_match = TRUE)
   r2      <- as.numeric(bayes_R2(fit))
