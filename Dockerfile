@@ -3,10 +3,10 @@ FROM ghcr.io/rocker-org/rstudio:4.4.1
 
 # System libs for tidyverse, rstan/brms, fonts/graphics, XML/cURL/SSL, and R Markdown
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential gfortran pkg-config zlib1g-dev libgit2-dev \
+    build-essential gfortran pkg-config zlib1g-dev libbz2-dev libgit2-dev \
     libssl-dev libxml2-dev libcurl4-openssl-dev \
     libfontconfig1-dev libfreetype6-dev libharfbuzz-dev libfribidi-dev \
-    libpng-dev libjpeg-dev libtiff5-dev libx11-dev \
+    libpng-dev libjpeg-dev libtiff5-dev libx11-dev libwebp-dev \
     pandoc \
  && rm -rf /var/lib/apt/lists/*
 
