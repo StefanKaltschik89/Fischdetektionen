@@ -1,0 +1,38 @@
+# Don't copy git history
+.git
+.gitignore
+
+# R and RStudio junk
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user
+
+# renv local library (too big, gets restored inside image anyway)
+renv/library
+renv/staging
+
+# Cache & temp
+.DS_Store
+*.log
+*.tmp
+
+# Data & secrets (IMPORTANT!)
+data/
+*.csv
+*.tsv
+*.rds
+*.sqlite
+.env
+
+# Reports and artifacts
+*.html
+*.pdf
+*.docx
+*.xlsx
+*.png
+*.jpg
+*.jpeg
+
+# Python cache in case
+__pycache__
